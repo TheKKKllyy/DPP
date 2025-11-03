@@ -3,10 +3,16 @@ import fetch from "node-fetch";
 import cors from "cors";
 
 const app = express();
-app.use(cors());
+
+// Allow requests from ANY origin (quick solution)
+app.use(cors());  
+
+// OR, restrict to your frontend domain:
+// app.use(cors({ origin: "https://thekkkllyy.github.io" }));
+
 app.use(express.json());
 
-const API_KEY = process.env.OPENROUTER_KEY; // use environment variable!
+const API_KEY = process.env.OPENROUTER_KEY;
 const MODEL = "deepseek/deepseek-chat";
 
 app.post("/chat", async (req, res) => {
