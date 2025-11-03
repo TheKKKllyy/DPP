@@ -1,19 +1,17 @@
-const express = require("express");
-const fetch = require("node-fetch"); // or built-in fetch if Node 18+
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import fetch from "node-fetch"; // skip if Node >=18
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Read your API key from environment variable (Render or Replit)
-const API_KEY = process.env.DSS2; // <-- your key name
+const API_KEY = process.env.DSS2;
 if (!API_KEY) {
   console.error("API key missing! Set DSS2 environment variable.");
   process.exit(1);
 }
 
-// Helper function with retry logic
 async function sendToOpenRouter(message, retries = 3) {
   const payload = {
     model: "deepseek/deepseek-chat",
@@ -28,8 +26,7 @@ async function sendToOpenRouter(message, retries = 3) {
           "Authorization": `Bearer ${API_KEY}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(payload),
-        timeout: 30000 // 30 seconds
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -44,11 +41,9 @@ async function sendToOpenRouter(message, retries = 3) {
     }
   }
 
-  // If all retries fail
   return "Sorry, the AI is currently unavailable. Please try again later.";
 }
 
-// Chat endpoint
 app.post("/chat", async (req, res) => {
   const message = req.body.message;
   if (!message) return res.status(400).json({ error: "Missing message" });
@@ -57,6 +52,5 @@ app.post("/chat", async (req, res) => {
   res.json({ reply });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
