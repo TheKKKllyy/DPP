@@ -1,56 +1,56 @@
+// index.js
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch"; // skip if Node >=18
+import fetch from "node-fetch";
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 10000;
+
+// Middleware
+app.use(cors()); // allows requests from any origin
 app.use(express.json());
 
+// Environment variable check
 const API_KEY = process.env.DSS2;
 if (!API_KEY) {
-  console.error("API key missing! Set DSS2 environment variable.");
+  console.error("Error: DSS2 environment variable is not set!");
   process.exit(1);
 }
 
-async function sendToOpenRouter(message, retries = 3) {
-  const payload = {
-    model: "deepseek/deepseek-chat-v3.1:free",
-    messages: [{ role: "user", content: message }]
-  };
-
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (data.choices && data.choices[0]?.message?.content) {
-        return data.choices[0].message.content;
-      } else {
-        console.warn("OpenRouter returned no content, attempt", attempt);
-      }
-    } catch (err) {
-      console.warn("Attempt", attempt, "failed:", err.message);
-    }
+// POST /chat endpoint
+app.post("/chat", async (req, res) => {
+  const userMessage = req.body.message;
+  if (!userMessage || userMessage.trim() === "") {
+    return res.status(400).json({ error: "Message cannot be empty." });
   }
 
-  return "Sorry, the AI is currently unavailable. Please try again later.";
-}
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat-v3.1:free",
+        messages: [{ role: "user", content: userMessage }]
+      })
+    });
 
-app.post("/chat", async (req, res) => {
-  const message = req.body.message;
-  if (!message) return res.status(400).json({ error: "Missing message" });
+    const data = await response.json();
 
-  const reply = await sendToOpenRouter(message);
-  res.json({ reply });
+    if (!data.choices || !data.choices[0].message) {
+      return res.json({ reply: "No response from AI." });
+    }
+
+    res.json({ reply: data.choices[0].message.content });
+  } catch (err) {
+    console.error("OpenRouter API error:", err);
+    res.status(500).json({ error: "Failed to fetch response from AI." });
+  }
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Start server
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
