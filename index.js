@@ -14,7 +14,7 @@ if (!API_KEY) {
 
 async function sendToOpenRouter(message, retries = 3) {
   const payload = {
-    model: "deepseek/deepseek-chat",
+    model: "deepseek/deepseek-chat-v3.1:free",
     messages: [{ role: "user", content: message }]
   };
 
